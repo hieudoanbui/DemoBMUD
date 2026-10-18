@@ -1,6 +1,6 @@
-# QueryLab — Tấn công và phòng chống SQL Injection
+# PhoneStore — Demo SQL Injection Attack & Defense
 
-Website phục vụ báo cáo giữa kỳ, so sánh **Vulnerable** (nối chuỗi SQL có chủ đích) và **Secure** (Prepared Statements của MySQL). Hai bài thực hành: vượt qua đăng nhập và làm lộ điện thoại đang ẩn. Mọi kết quả đều lấy từ truy vấn MySQL thật, không có mock database hoặc nhánh JavaScript tự cho payload thành công.
+Giao diện cửa hàng điện thoại tối giản với Light/Dark Mode, phục vụ báo cáo giữa kỳ, so sánh **Vulnerable** (nối chuỗi SQL có chủ đích) và **Secure** (Prepared Statements của MySQL). Hai bài thực hành: vượt qua đăng nhập và làm lộ điện thoại đang ẩn. Mọi kết quả đều lấy từ truy vấn MySQL thật, không có mock database hoặc nhánh JavaScript tự cho payload thành công.
 
 **Chỉ chạy trên localhost, dùng schema riêng và dữ liệu giả. Không public frontend, backend, tunnel hoặc reverse proxy lab ra Internet.** Tài khoản có role `admin` trong seed cũng không được cấp chức năng quản trị ứng dụng. Không nhập tài khoản thật vào lab.
 
@@ -8,9 +8,9 @@ Website phục vụ báo cáo giữa kỳ, so sánh **Vulnerable** (nối chuỗ
 
 Ảnh chụp khi chạy kiểm thử với MySQL thật và dữ liệu mẫu, không phải website trực tuyến. Kết nối Aiven vẫn cần cấu hình riêng.
 
-![Trang đăng nhập QueryLab — Dark Mode](docs/screenshots/login-desktop-dark.png)
+![Trang đăng nhập PhoneStore — Light Mode](docs/screenshots/login-desktop-light.png)
 
-[Xem trang sản phẩm trên desktop](docs/screenshots/products-desktop-dark.png) · [Xem giao diện mobile — Light Mode](docs/screenshots/products-mobile-light.png)
+[Sản phẩm — Light](docs/screenshots/products-desktop-light.png) · [Sản phẩm — Dark](docs/screenshots/products-desktop-dark.png) · [Mobile — Light](docs/screenshots/products-mobile-light.png) · [Đăng nhập — Dark](docs/screenshots/login-desktop-dark.png)
 
 ## 1. Công nghệ và cấu trúc
 
@@ -27,10 +27,10 @@ DemoBMUD/
 │   ├── src/
 │   │   ├── api/                # Axios client, authApi, phoneApi
 │   │   ├── components/
-│   │   │   ├── common/         # Layout, tabs, theme, QueryViewer
+│   │   │   ├── common/         # Layout, Logo, tabs, ThemeToggle
 │   │   │   ├── auth/           # LoginForm
 │   │   │   └── phones/         # SearchBar, PhoneCard, PhoneGrid
-│   │   ├── contexts/           # Session/auth state
+│   │   ├── contexts/           # AuthContext và ThemeContext dùng chung
 │   │   ├── pages/              # LoginPage, ProductsPage
 │   │   ├── routes/             # ProtectedRoute
 │   │   └── test/               # Component tests
@@ -163,25 +163,29 @@ npm run build  # Kiểm tra và tạo frontend/dist, không khởi chạy/public
 
 ## 6. Trình diễn Login
 
-1. Vào `/login`, chọn **Vulnerable Login**.
-2. Chọn **Use Sample Account** rồi **Login**: đăng nhập bằng `admin / admin123` thành công từ database thật. Secure Login cũng dùng chính tài khoản này.
-3. Logout, chọn **Use SQL Injection**. Nút chỉ điền `username = "admin' -- "`, `password = "anything"`; nhấn Login mới gọi API.
+1. Vào `/login`, chọn tab **Vulnerable**.
+2. Chọn **Tài khoản mẫu** rồi **Đăng nhập**: đăng nhập bằng `admin / admin123` từ database thật. Tab Secure cũng dùng chính tài khoản này.
+3. Đăng xuất, chọn **Điền mẫu SQLi**. Nút chỉ điền `username = "admin' -- "`, `password = "anything"`; nhấn Đăng nhập mới gọi API.
 4. Vulnerable nối trực tiếp input: phần `-- ` (có dấu cách cuối) biến điều kiện mật khẩu thành comment trong MySQL. Kết quả truy vấn thực quyết định có đăng nhập hay không.
 5. Khi truy vấn Vulnerable trả một user, backend kiểm tra lại **cùng input** bằng Prepared Statement để xác định nguồn gốc: nếu không khớp thì tạo **Injection Demo Session**, không cấp role hoặc khả năng quản trị.
-6. Logout, chuyển **Secure Login**, dùng **chính xác cùng payload** rồi Login. Prepared Statement trả 0 user và API báo sai thông tin đăng nhập.
+6. Đăng xuất, chuyển tab **Secure**, dùng **chính xác cùng payload** rồi Đăng nhập. Prepared Statement trả 0 user và API báo sai thông tin đăng nhập.
 
-Sau đăng nhập, chuyển đến `/products`. Nhấn **Xem SQL đăng nhập** để xem lại truy vấn thành công, vì route Login đã điều hướng. Password luôn được che trong trace/API và bản Copy SQL. Truy vấn hiển thị khi login là bản đã che, không phải chuỗi chứa mật khẩu nguyên gốc.
+Sau đăng nhập, chuyển đến `/products`. Giao diện chỉ hiển thị thông báo đăng nhập ngắn gọn, tài khoản ở header và sản phẩm. Không render SQL, parameters, provenance của phiên lab hoặc Inspector. Backend vẫn phân loại phiên credentials/injection-demo, không cấp quyền quản trị.
 
 ## 7. Trình diễn Search
 
 1. Trang sản phẩm tự truy vấn danh sách mặc định: chỉ 6 sản phẩm `on`.
-2. **Use Sample Search** điền `iPhone`, rồi **Search**: cả hai chế độ trả 2 iPhone công khai phù hợp.
-3. **Use SQL Injection** điền payload chỉ đọc `"' OR 1=1 -- "`, rồi Search trên Vulnerable.
-4. Điều kiện được biến đổi thành dạng `status = 'on' AND name LIKE '%' OR 1=1 -- ...`. `OR 1=1` khiến cả 10 dòng phù hợp; 4 dòng `off` có badge **HIDDEN – EXPOSED BY SQL INJECTION**.
-5. Thông báo khai thác thành công chỉ xuất hiện nếu API thực sự trả sản phẩm `off`, không dựa vào thao tác chọn nút mẫu.
-6. Chuyển **Secure Search**: kết quả cũ được xóa và truy vấn danh sách công khai lại. Dùng cùng payload: nó trở thành giá trị của parameter LIKE; không làm thay đổi cấu trúc SQL, không trả sản phẩm OFF (seed chuẩn cho 0 kết quả).
+2. **Tìm kiếm mẫu** điền `iPhone`, rồi **Tìm kiếm**: cả hai chế độ trả 2 iPhone công khai phù hợp.
+3. **Điền mẫu SQLi** điền payload chỉ đọc `"' OR 1=1 -- "`, rồi Tìm kiếm trên tab Vulnerable.
+4. Điều kiện được biến đổi thành dạng `status = 'on' AND name LIKE '%' OR 1=1 -- ...`. `OR 1=1` khiến cả 10 dòng phù hợp; 4 dòng `off` chỉ có badge nhỏ **Đang ẩn**.
+5. Chỉ bản ghi `off` thực sự do API trả về mới được gắn badge **Đang ẩn**. Không có banner khai thác thành công hoặc cảnh báo đỏ lớn.
+6. Chuyển tab **Secure**: kết quả cũ được xóa và truy vấn danh sách công khai lại. Dùng cùng payload: nó trở thành giá trị của parameter LIKE; không làm thay đổi cấu trúc SQL, không trả sản phẩm OFF (seed chuẩn cho 0 kết quả).
 
-Query Viewer hiển thị input, template, chuỗi nối có highlight input hoặc statement + parameters, số dòng thực tế và giải thích. Kết quả trống/lỗi không bị thay bằng dữ liệu cứng. Wildcard `%`/`_` vẫn có nghĩa trong LIKE ở Secure nhưng luôn bị ràng buộc bởi `status = 'on'`.
+SQL Query Viewer đã được bỏ khỏi frontend. Kết quả trống/lỗi không bị thay bằng dữ liệu cứng. Wildcard `%`/`_` vẫn có nghĩa trong LIKE ở Secure nhưng luôn bị ràng buộc bởi `status = 'on'`.
+
+### Giao diện và theme
+
+PhoneStore dùng header chung, form đăng nhập 420px, grid desktop 4 cột / tablet 2 cột / mobile 1–2 cột. Badge Đang ẩn nhỏ, không hiển thị SQL, thông tin kết nối hoặc banner kỹ thuật. Mặc định Light nếu chưa lưu theme; đổi theme bằng nút ở header và giữ lựa chọn qua refresh, đăng nhập, đăng xuất. `ThemeContext` là nguồn state duy nhất; CSS variables áp dụng trên `html[data-theme]`. Tailwind 4 dùng custom variant theo cùng attribute, không dùng một state/class dark riêng. File `public/theme.js` đọc cùng preference trước paint để tránh nháy theme. Key `querylab-theme` được giữ để tương thích lựa chọn cũ; đây không phải branding hiển thị.
 
 ## 8. API và biện pháp giới hạn lab
 
@@ -201,6 +205,7 @@ Query Viewer hiển thị input, template, chuỗi nối có highlight input ho�
 - Cookie HttpOnly, SameSite=Strict, 1 giờ, session ID tái tạo sau đăng nhập, logout hủy session server. HTTP cookie chỉ dùng cho localhost; không dùng cookie production theo cấu hình lab.
 - Session MemoryStore dành cho một tiến trình lab; khởi động lại backend sẽ xóa phiên. Frontend kiểm tra `/auth/me` và chuyển về Login khi session hết hạn.
 - Các role trong database chỉ là dữ liệu minh họa, không có API quản trị. Hai chế độ có thể truy cập cửa hàng để so sánh cùng dữ liệu.
+- Axios gửi `X-Lab-Trace: omit` cho frontend. Login chỉ trả user (hoặc lỗi ngắn); search chỉ trả phones/count, không gửi trace, SQL template, parameters hay giải thích. Các lab client cũ không có header này vẫn giữ response để tương thích bài thực hành. Header này chỉ chọn cách serialize response, không đổi truy vấn, session hoặc quyền.
 - API chỉ SELECT các cột cần thiết, không trả password/role. Không log credential, SQL nhạy cảm hoặc thông tin kết nối. Lỗi SQL trả thông báo chung.
 - Các truy vấn Secure dùng `execute(statement, params)`. Vulnerable giữ lỗi có chủ đích trong `queryService.js`. Không copy mã Vulnerable sang ứng dụng thật.
 - `multipleStatements=false`, input giới hạn độ dài và loại dữ liệu; payload mẫu chỉ đọc, không có payload phá hủy.
@@ -217,7 +222,7 @@ npm test
 npm run build
 ```
 
-Bao gồm kiểm tra cấu hình thiếu, policy TLS, Host/Origin/proxy, LAB_MODE, auth guard, lỗi không lộ nội bộ, TC11 (badge ON/OFF), TC13 (route guard). Component tests có fixture props để kiểm tra UI, **không** thay thế truy vấn database trong ứng dụng hay integration/E2E.
+Bao gồm kiểm tra cấu hình thiếu, policy TLS, Host/Origin/proxy, LAB_MODE, auth guard, lỗi không lộ nội bộ, TC11 (badge Đang ẩn), TC13 (route guard), theme mặc định/lưu trữ/storage lỗi và thông báo lỗi gọn. Component tests có fixture props để kiểm tra UI, **không** thay thế truy vấn database trong ứng dụng hay integration/E2E.
 
 ### Tự chạy toàn bộ bằng MySQL 8.4 thực trên Docker
 
@@ -262,17 +267,17 @@ Hai lệnh không chạy mock, không seed tự động, không skip khi thiếu
 | TC08 | Secure tìm iPhone chỉ ON | MySQL integration + browser |
 | TC09 | Vulnerable trả 10, gồm 4 OFF | MySQL integration + browser |
 | TC10 | Secure không lộ OFF | MySQL integration + browser |
-| TC11 | OFF có badge HIDDEN | Component + browser với dữ liệu MySQL |
+| TC11 | OFF có badge Đang ẩn | Component + browser với dữ liệu MySQL |
 | TC12 | Logout hủy cookie/session cũ | MySQL integration + browser |
 | TC13 | Chưa đăng nhập chuyển Login | Component + browser |
 | TC14 | Thiếu Aiven báo lỗi rõ ràng | Config tests + startup fail-fast |
 
-Browser tests còn kiểm tra reload giữ session, đổi chế độ không tái sử dụng kết quả, mobile không tràn ngang, Light/Dark Mode và lỗi JavaScript. Screenshot sinh vào `test-results/` (đã ignore); trace chỉ giữ khi fail. Không commit trace thật có thể chứa input/session.
+Browser tests còn kiểm tra reload giữ session, đổi chế độ không tái sử dụng kết quả, không tràn ngang ở 320/390/768/1440px, số cột responsive, màu CSS thực của Light/Dark Mode, giao diện không có Inspector, API compact không trả SQL trace và lỗi JavaScript. Một test lỗi mạng chủ động chặn transport để kiểm tra thông báo, không giả lập dữ liệu thành công. Screenshot sinh vào `test-results/` (đã ignore); trace chỉ giữ khi fail. Không commit trace thật có thể chứa input/session.
 
 ## 10. Tình trạng kết nối và giới hạn
 
 Repository không bao gồm credential Aiven hoặc CA certificate. **Chưa xác thực kết nối Aiven** cho tới khi bạn cấu hình service thật và chạy health/integration ở trên. Kiểm thử MySQL Docker và kiểm thử Aiven là hai kết quả riêng; không gọi Docker fixture là Aiven.
 
-Kết quả đã chạy trong workspace, số lượng test và ánh xạ TC01–TC14 được ghi ở [docs/verification.md](docs/verification.md).
+Kết quả đã chạy trong workspace, số lượng test và ánh xạ TC01–TC14 được ghi ở [docs/verification.md](docs/verification.md). Danh sách file và giải thích refactor UI/theme: [docs/ui-refactor.md](docs/ui-refactor.md).
 
 Trong môi trường cloud không hỗ trợ browser localhost, không tạo public preview/tunnel để trình diễn. Chạy các local requests và test trong môi trường đó; demo trực quan trên máy local được kiểm soát.

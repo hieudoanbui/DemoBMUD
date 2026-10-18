@@ -1,4 +1,4 @@
-# Báo cáo kiểm thử QueryLab
+# Báo cáo kiểm thử PhoneStore sau refactor UI/theme
 
 Ngày thực hiện: **18/10/2026**. Kết quả dưới đây là các lệnh đã thực sự chạy trong workspace, không phải chỉ danh sách test dự kiến.
 
@@ -23,12 +23,12 @@ npm run test:lab
 | Nhóm | Passed | Failed | Skipped |
 |---|---:|---:|---:|
 | Backend config/security | 14 | 0 | 0 |
-| Frontend components | 6 | 0 | 0 |
-| MySQL integration | 16 | 0 | 0 |
-| Playwright browser E2E | 3 | 0 | 0 |
-| **Tổng** | **39** | **0** | **0** |
+| Frontend components | 10 | 0 | 0 |
+| MySQL integration | 17 | 0 | 0 |
+| Playwright browser E2E | 6 | 0 | 0 |
+| **Tổng** | **47** | **0** | **0** |
 
-`npm run build` thành công. `npm audit` và `npm audit --omit=dev` báo **0 vulnerabilities** tại thời điểm chạy; đây là kết quả dependency audit, không phải tuyên bố ứng dụng Vulnerable an toàn để public.
+`npm run build` thành công. Dependencies và lockfile không đổi trong refactor này.
 
 ## Kết quả TC01–TC14
 
@@ -44,7 +44,7 @@ npm run test:lab
 | TC08 | Secure tìm iPhone trả cùng 2 dòng ON. |
 | TC09 | Payload search `' OR 1=1 -- ` trả 10 dòng trong Vulnerable, gồm đúng 4 OFF. |
 | TC10 | Cùng payload qua Secure trả 0 dòng, hiddenCount=0. |
-| TC11 | Component tests và browser xác nhận 4 sản phẩm OFF thực có badge HIDDEN; nút điền payload chưa tự làm lộ sản phẩm. |
+| TC11 | Component tests và browser xác nhận 4 sản phẩm OFF thực chỉ có badge nhỏ Đang ẩn; nút điền payload chưa tự làm lộ sản phẩm. |
 | TC12 | Logout hủy session; dùng lại cookie cũ cũng trả 401; browser quay về Login. |
 | TC13 | Truy cập products khi chưa đăng nhập được chuyển về Login; API search trả 401. |
 | TC14 | Thiếu cấu hình Aiven báo tên biến thiếu; tiến trình backend thoát mã 1, không báo kết nối thành công. |
@@ -60,9 +60,14 @@ Các kiểm tra bổ sung đã qua:
 - Host ngoài localhost, Origin lạ, POST thiếu Origin và forwarded headers bị từ chối.
 - LAB_MODE=false tắt toàn bộ Vulnerable router.
 - API lỗi không lộ stack trace hoặc chi tiết kết nối.
-- Light/Dark Mode giữ lựa chọn sau reload, mobile 390px không tràn ngang; không có JavaScript page error trong luồng tấn công/phòng thủ chính.
+- Mặc định Light khi chưa lưu; theme đổi background, input, header, card, button thực tế qua kiểm tra computed CSS, không chỉ đổi icon. Có kiểm tra hover của toggle và màu cơ bản sau khi rời chuột.
+- Light/Dark Mode giữ lựa chọn qua refresh, đăng nhập, đăng xuất; component tests kiểm tra state chung giữa nhiều toggle, giá trị storage không hợp lệ và storage không khả dụng.
+- Không tràn ngang ở 320/390/768/1440px; grid tương ứng 1/2/2/4 cột; form Login desktop rộng 420px, căn giữa.
+- PhoneStore xuất hiện nhất quán, không có Inspector/Copy SQL/banner khai thác trên hai trang; không có JavaScript page error trong luồng tấn công/phòng thủ chính.
+- Frontend gửi X-Lab-Trace: omit; các response Login/Search, kể cả Login sai, không chứa trace SQL. Các API client cũ vẫn nhận response tương thích, không đổi truy vấn/session.
+- Nút hiện/ẩn password hoạt động. Một ca chủ động chặn kết nối để kiểm tra thông báo lỗi ngắn; đây là mô phỏng lỗi transport, không giả lập dữ liệu hoặc SQL thành công.
 
-Screenshot do Playwright tạo trong `test-results/` (đã gitignore): login desktop dark, products desktop dark, products mobile light. Đã kiểm tra hình ảnh trực tiếp. Container fixture và server kiểm thử được dọn sau khi test; báo cáo không có nghĩa ứng dụng đang chạy với Aiven.
+Screenshot do Playwright tạo trong `test-results/` (đã gitignore), bản để xem trên GitHub nằm trong `docs/screenshots/`: Login desktop Light/Dark, Login mobile Light, Products desktop Light/Dark, Products mobile Light và Products có badge Đang ẩn. Đã kiểm tra hình ảnh trực tiếp của Login Light/Dark, Products Dark, Products có sản phẩm ẩn và mobile Light. Container fixture và server kiểm thử được dọn sau khi test; báo cáo không có nghĩa ứng dụng đang chạy với Aiven.
 
 ## Việc cần làm khi có Aiven
 

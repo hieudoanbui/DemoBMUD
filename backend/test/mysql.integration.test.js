@@ -142,3 +142,20 @@ test('tài khoản runtime chỉ có quyền SELECT, không được UPDATE dữ
   // A harmless no-op UPDATE verifies the actual permission boundary.
   await assert.rejects(() => db.query('UPDATE phones SET quantity = quantity WHERE id = -1'), (error) => error.code === 'ER_TABLEACCESS_DENIED_ERROR');
 });
+test('PhoneStore compact response giữ nguyên Login/Search thật nhưng không gửi SQL trace', async () => {
+  for (const mode of ['vulnerable', 'secure']) {
+    const agent = request.agent(app);
+    const response = await post(agent, `/api/${mode}/login`, credentials).set('X-Lab-Trace', 'omit');
+    assert.equal(response.status, 200);
+    assert.deepEqual(Object.keys(response.body), ['user']);
+    assert.equal((await get(agent, '/api/auth/me')).body.user.username, 'admin');
+    const phones = await get(agent, `/api/${mode}/phones/search`).query({ q: payload }).set('X-Lab-Trace', 'omit');
+    assert.equal(phones.status, 200);
+    assert.deepEqual(Object.keys(phones.body).sort(), ['count', 'phones']);
+    assert.equal(phones.body.count, mode === 'vulnerable' ? 10 : 0);
+    const failed = await post(agent, `/api/${mode}/login`, { username: 'admin', password: 'wrong-password' }).set('X-Lab-Trace', 'omit');
+    assert.equal(failed.status, 401);
+    assert.equal(failed.body.code, 'INVALID_CREDENTIALS');
+    assert.equal(failed.body.trace, undefined);
+  }
+});

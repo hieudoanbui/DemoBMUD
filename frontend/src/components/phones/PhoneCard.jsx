@@ -1,5 +1,4 @@
 import { useId } from 'react';
-import { ArrowUpRight, Circle, HardDrive, Package, TriangleAlert } from 'lucide-react';
 
 const palettes = {
   Apple: ['#d1bda6', '#504943', '#f1ddc4'],
@@ -26,8 +25,8 @@ function PhoneIllustration({ brand, name }) {
 
 export default function PhoneCard({ phone }) {
   const hidden = phone.status === 'off';
-  return <article className={`phone-card ${hidden ? 'exposed' : ''}`}>
-    <div className="phone-visual"><span className="phone-brand-label">{phone.brand}</span><span className={`stock-dot ${hidden ? 'hidden-stock' : ''}`}><span />{hidden ? 'HIDDEN' : 'PUBLIC'}</span><PhoneIllustration brand={phone.brand} name={phone.name} /><span className="illustration-caption">ẢNH MINH HỌA · DỮ LIỆU LAB</span></div>
-    <div className="phone-details">{hidden && <div className="hidden-badge"><TriangleAlert size={13} /> HIDDEN – EXPOSED BY SQL INJECTION</div>}<div className="phone-name-row"><h3>{phone.name}</h3><ArrowUpRight size={15} aria-hidden="true" /></div><div className="phone-specs"><span><HardDrive size={12} />{phone.storage}</span><span><Circle size={10} />{phone.color}</span></div><p className="phone-description">{phone.description}</p><div className="phone-price-row"><strong>{new Intl.NumberFormat('vi-VN').format(Number(phone.price))}<small>₫</small></strong><span><Package size={12} />{phone.quantity} máy</span></div></div>
+  return <article className="phone-card">
+    <div className="phone-visual">{hidden && <span className="hidden-badge">Đang ẩn</span>}<PhoneIllustration brand={phone.brand} name={phone.name} /></div>
+    <div className="phone-details"><p className="phone-brand-label">{phone.brand}</p><h3>{phone.name}</h3><p className="phone-specs">{phone.storage}<span aria-hidden="true"> / </span>{phone.color}</p><strong className="phone-price">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(Number(phone.price))}</strong></div>
   </article>;
 }

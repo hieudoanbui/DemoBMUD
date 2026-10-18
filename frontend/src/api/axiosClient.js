@@ -1,8 +1,10 @@
 import axios from 'axios';
 
-export const axiosClient = axios.create({ baseURL: '/api', withCredentials: true, timeout: 15000 });
+export const axiosClient = axios.create({
+  baseURL: '/api', withCredentials: true, timeout: 15000,
+  headers: { 'X-Lab-Trace': 'omit' },
+});
 export function apiError(error) {
-  return error.response?.data?.error || (error.code === 'ECONNABORTED'
-    ? 'MySQL phản hồi quá lâu. Kiểm tra kết nối backend và Aiven.'
-    : 'Không kết nối được backend. Hãy kiểm tra backend/.env và khởi động API.');
+  if (error.response?.data?.code === 'INVALID_CREDENTIALS') return 'Tên đăng nhập hoặc mật khẩu không đúng';
+  return 'Có lỗi xảy ra, vui lòng thử lại';
 }

@@ -1,15 +1,9 @@
 import { Moon, Sun } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('querylab-theme') || 'dark'; } catch { return 'dark'; }
-  });
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem('querylab-theme', theme); } catch { /* private mode */ }
-  }, [theme]);
-  return <button className="icon-button" aria-label={theme === 'dark' ? 'Bật Light Mode' : 'Bật Dark Mode'} title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+  const { theme, toggleTheme } = useTheme();
+  return <button type="button" className="icon-button theme-toggle" aria-label={theme === 'dark' ? 'Bật Light Mode' : 'Bật Dark Mode'} title={theme === 'dark' ? 'Chuyển sang Light Mode' : 'Chuyển sang Dark Mode'} onClick={toggleTheme}>
     {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
   </button>;
 }
