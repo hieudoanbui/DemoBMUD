@@ -1,0 +1,73 @@
+import { test, expect } from '@playwright/test';
+
+test('TC13 · người chưa đăng nhập được chuyển từ products về login', async ({ page }) => {
+  await page.goto('/products');
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole('heading', { name: 'Đăng nhập vào lab' })).toBeVisible();
+});
+
+test('đăng nhập, so sánh SQL Injection, đổi tab xóa kết quả cũ và logout trên MySQL thật', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Secure Login', exact: true }).click();
+  await page.getByRole('button', { name: 'Use SQL Injection', exact: true }).click();
+  await page.getByRole('button', { name: 'Login · Secure', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Tên đăng nhập hoặc mật khẩu không đúng');
+  await expect(page.getByText('EXECUTED', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Vulnerable Login', exact: true }).click();
+  await expect(page.getByText('AWAITING INPUT', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Login · Vulnerable', exact: true }).click();
+  await expect(page).toHaveURL(/\/products$/);
+  await expect(page.locator('.session-banner')).toContainText('Injection Demo Session');
+  await expect(page.locator('.phone-card')).toHaveCount(6);
+  await page.getByRole('button', { name: 'Xem SQL đăng nhập', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Login · SQL Query Viewer' })).toContainText('injection-demo');
+  await expect(page.getByRole('region', { name: 'Login · SQL Query Viewer' })).not.toContainText('anything');
+  await page.getByRole('button', { name: 'Ẩn SQL đăng nhập', exact: true }).click();
+  await page.getByRole('button', { name: 'Use SQL Injection', exact: true }).click();
+  await expect(page.locator('.hidden-badge')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.locator('.phone-card')).toHaveCount(10);
+  await expect(page.locator('.hidden-badge')).toHaveCount(4);
+  await expect(page.getByText('SQL Injection succeeded: hidden products were exposed.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Secure Search', exact: true }).click();
+  await expect(page.locator('.phone-card')).toHaveCount(6);
+  await expect(page.locator('.hidden-badge')).toHaveCount(0);
+  await expect(page.getByLabel('TÌM KIẾM SẢN PHẨM')).toHaveValue('');
+  await page.getByRole('button', { name: 'Use SQL Injection', exact: true }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.getByText('Không tìm thấy sản phẩm', { exact: true })).toBeVisible();
+  await expect(page.locator('.hidden-badge')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Use Sample Search', exact: true }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.locator('.phone-card')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Logout', exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.goto('/products');
+  await expect(page).toHaveURL(/\/login$/);
+  expect(errors).toEqual([]);
+});
+
+test('tài khoản mẫu Secure, session tồn tại sau reload; giao diện mobile và Light/Dark Mode', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Bật Light Mode' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByRole('button', { name: 'Secure Login', exact: true }).click();
+  await page.getByRole('button', { name: 'Use Sample Account', exact: true }).click();
+  await page.getByRole('button', { name: 'Login · Secure', exact: true }).click();
+  await expect(page.locator('.phone-card')).toHaveCount(6);
+  await page.reload();
+  await expect(page).toHaveURL(/\/products$/);
+  await expect(page.locator('.phone-card')).toHaveCount(6);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/products-mobile-light.png', fullPage: true });
+  await page.getByRole('button', { name: 'Bật Dark Mode' }).click();
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.screenshot({ path: 'test-results/products-desktop-dark.png', fullPage: true });
+  await page.getByRole('button', { name: 'Logout', exact: true }).click();
+  await page.screenshot({ path: 'test-results/login-desktop-dark.png', fullPage: true });
+});

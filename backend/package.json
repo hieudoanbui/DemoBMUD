@@ -1,0 +1,21 @@
+{
+  "name": "@sql-lab/backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "db:init": "node scripts/init-db.js",
+    "test": "node --test test/config.test.js test/security.test.js",
+    "test:integration": "node --test test/mysql.integration.test.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "helmet": "^8.1.0",
+    "mysql2": "^3.15.3"
+  },
+  "devDependencies": { "supertest": "^7.1.4" }
+}

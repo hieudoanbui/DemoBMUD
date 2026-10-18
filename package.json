@@ -1,0 +1,23 @@
+{
+  "name": "sql-injection-demo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": ["backend", "frontend"],
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c cyan,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w frontend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:integration": "npm run test:integration -w backend",
+    "test:e2e": "playwright test",
+    "test:lab": "node scripts/test-local-mysql.mjs",
+    "db:init": "npm run db:init -w backend"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "concurrently": "^9.2.1"
+  }
+}
